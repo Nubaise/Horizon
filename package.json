@@ -9,10 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@sentry/nextjs": "^10.43.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.577.0",
     "next": "^14.2.35",
+    "node-appwrite": "^22.1.3",
     "query-string": "^9.3.1",
     "radix-ui": "^1.4.3",
     "react": "^18",
