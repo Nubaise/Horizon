@@ -23,11 +23,13 @@ import { authFormSchema } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getLoggedInUser, signIn, signUp } from '@/lib/actions/user.actions';
+import PlaidLink from './PlaidLink';
 
 const AuthForm = ({ type }: { type: string }) => {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const formSchema = authFormSchema(type);
 
@@ -43,14 +45,29 @@ const AuthForm = ({ type }: { type: string }) => {
     // 2. Define a submit handler.
     const onSubmit = async (data: z.infer<typeof formSchema>) => {
       setIsLoading(true);
+      setError('');
 
       try {
-        // Sign up with Appwrite & create plaid token
-
         if(type === 'sign-up') {
-          const newUser = await signUp(data as SignUpParams);
+          const userData = {
+            firstName: data.firstName!,
+            lastName: data.lastName!,
+            address1: data.address1!,
+            city: data.city!,
+            state: data.state!,
+            postalCode: data.postalCode!,
+            dateofBirth: data.dateOfBirth!,
+            ssn: data.ssn!,
+            email: data.email,
+            password: data.password
+          }
 
-          setUser(newUser);
+          const newUser = await signUp(userData);
+          
+          if (newUser) {
+            console.log('SignUp successful:', newUser);
+            setUser(newUser);
+          }
         }
 
         if(type === 'sign-in') {
@@ -59,10 +76,14 @@ const AuthForm = ({ type }: { type: string }) => {
             password: data.password,
           })
 
-          if(response) router.push('/')
+          if(response) {
+            console.log('SignIn successful:', response);
+            router.push('/');
+          }
         }
-      } catch (error) {
-        console.log(error);
+      } catch (error: any) {
+        console.log('Auth error:', error);
+        setError(error.message || 'An error occurred. Please try again.');
       } finally {
         setIsLoading(false);
       }
@@ -100,7 +121,13 @@ const AuthForm = ({ type }: { type: string }) => {
       </header>
       {user ? (
         <div className="flex flex-col gap-4">
-          {/* PlaidLink */}
+          <div className="bg-blue-25 p-4 rounded-lg">
+            <h3 className="text-16 font-semibold text-blue-900 mb-2">Connect Your Bank Account</h3>
+            <p className="text-14 text-blue-700 mb-4">Link your bank account to start managing your finances</p>
+            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-14 font-semibold">
+              Connect Bank (Coming Soon)
+            </button>
+          </div>
         </div>
       ): (
         <>
@@ -127,7 +154,20 @@ const AuthForm = ({ type }: { type: string }) => {
 
               <CustomInput control={form.control} name='email' label="Email" placeholder='Enter your email' />
 
-              <CustomInput control={form.control} name='password' label="Password" placeholder='Enter your password' />
+              <div className="flex flex-col gap-2">
+                <CustomInput control={form.control} name='password' label="Password" placeholder='Must include: A-Z, a-z, 0-9, @$!%*?&' />
+                {type === 'sign-up' && (
+                  <p className="text-12 text-gray-500">
+                    Password must be at least 8 characters with uppercase, lowercase, number, and special character
+                  </p>
+                )}
+              </div>
+
+              {error && (
+                <div className="text-red-500 text-sm mt-2">
+                  {error}
+                </div>
+              )}
 
               <div className="flex flex-col gap-4">
                 <Button type="submit" disabled={isLoading} className="form-btn">
