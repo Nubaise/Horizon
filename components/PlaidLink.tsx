@@ -1,8 +1,11 @@
+'use client';
+
 import React, { useCallback, useEffect, useState } from 'react'
 import { Button } from './ui/button'
 import { PlaidLinkOnSuccess, PlaidLinkOptions, usePlaidLink } from 'react-plaid-link'
 import { useRouter } from 'next/navigation';
 import { createLinkToken, exchangePublicToken } from '@/lib/actions/user.actions';
+import Image from 'next/image';
 
 const PlaidLink = ({ user, variant }: PlaidLinkProps) => {
   const router = useRouter();
@@ -56,14 +59,24 @@ const PlaidLink = ({ user, variant }: PlaidLinkProps) => {
         >
           {isLoading ? 'Connecting...' : 'Connect bank'}
         </Button>
-      ): variant === 'ghost' ? (
+      ) : variant === 'ghost' ? (
         <Button
           onClick={() => open()}
           disabled={!ready || isLoading}
+          className="flex gap-2 items-center"
+          variant="ghost"
         >
-          {isLoading ? 'Connecting...' : 'Connect bank'}
+          <Image
+            src="/icons/plus.svg"
+            width={20}
+            height={20}
+            alt="plus"
+          />
+          <h2 className="text-14 font-semibold text-gray-600">
+            {isLoading ? 'Connecting...' : 'Add Bank'}
+          </h2>
         </Button>
-      ): (
+      ) : (
         <Button
           onClick={() => open()}
           disabled={!ready || isLoading}

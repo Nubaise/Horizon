@@ -44,11 +44,9 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
   try {
     const { account, database } = await createAdminClient();
 
-    // Check if user already exists
     try {
       const existingSession = await account.createEmailPasswordSession({ email, password });
       if (existingSession) {
-        // User exists and password is correct, just return success
         cookies().set("appwrite-session", existingSession.secret, {
           path: "/",
           httpOnly: true,
@@ -56,12 +54,11 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
           secure: true,
         });
         
-        // Get user data from database
         const user = await account.get();
         return parseStringify(user);
       }
     } catch (error) {
-      // User doesn't exist or password is wrong, continue with signup
+      // User doesn't exist, continue with signup
     }
 
     newUserAccount = await account.create({
@@ -103,7 +100,6 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
       secure: true,
     });
 
-    // Return user data that includes the database document info
     return parseStringify({
       $id: newUserAccount.$id,
       email: newUser.email,
@@ -129,12 +125,11 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
 export async function getLoggedInUser() {
   try {
     const { account } = await createSessionClient();
-
-    const user = await account.get();
-
+    const result = await account.get();
+    const user = await getUserInfo({ userId: result.$id });
     return parseStringify(user);
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return null;
   }
 }
@@ -142,17 +137,11 @@ export async function getLoggedInUser() {
 export const logoutAccount = async () => {
   try {
     const { account } = await createSessionClient();
-
-    // Delete the session from Appwrite
     await account.deleteSession({ sessionId: 'current' });
-    
-    // Delete the cookie
     cookies().delete('appwrite-session');
-    
     return { success: true };
   } catch (error) {
     console.error('Logout error:', error);
-    // Even if there's an error, still delete the cookie
     cookies().delete('appwrite-session');
     return { success: true };
   }
@@ -233,14 +222,12 @@ export const exchangePublicToken = async ({
   user,
 }: exchangePublicTokenProps) => {
   try {
-    // Get full user data from database
     const userData = await getUserInfo({ userId: user.$id });
     
     if (!userData || !userData.dwollaCustomerId) {
       throw new Error('User data or Dwolla customer ID not found');
     }
 
-    // Exchange public token for access token and item ID
     const response = await plaidClient.itemPublicTokenExchange({
       public_token: publicToken,
     });
@@ -248,14 +235,12 @@ export const exchangePublicToken = async ({
     const accessToken = response.data.access_token;
     const itemId = response.data.item_id;
     
-    // Get account information from Plaid using the access token
     const accountsResponse = await plaidClient.accountsGet({
       access_token: accessToken,
     });
 
     const accountData = accountsResponse.data.accounts[0];
 
-    // Create a processor token for Dwolla using the access token and account ID
     const request: ProcessorTokenCreateRequest = {
       access_token: accessToken,
       account_id: accountData.account_id,
@@ -265,17 +250,14 @@ export const exchangePublicToken = async ({
     const processorTokenResponse = await plaidClient.processorTokenCreate(request);
     const processorToken = processorTokenResponse.data.processor_token;
 
-     // Create a funding source URL for the account using the Dwolla customer ID, processor token, and bank name
-     const fundingSourceUrl = await addFundingSource({
+    const fundingSourceUrl = await addFundingSource({
       dwollaCustomerId: userData.dwollaCustomerId,
       processorToken,
       bankName: accountData.name,
     });
     
-    // If the funding source URL is not created, throw an error
     if (!fundingSourceUrl) throw new Error('Failed to create funding source');
 
-    // Create a bank account using the user ID, item ID, account ID, access token, funding source URL, and sharable ID
     await createBankAccount({
       userId: user.$id,
       bankId: itemId,
@@ -285,10 +267,8 @@ export const exchangePublicToken = async ({
       sharableId: encryptId(accountData.account_id),
     });
 
-    // Revalidate the path to reflect the changes
     revalidatePath("/");
 
-    // Return a success message
     return parseStringify({
       publicTokenExchange: "complete",
     });
