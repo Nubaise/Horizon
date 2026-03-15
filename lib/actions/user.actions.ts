@@ -222,7 +222,7 @@ export const exchangePublicToken = async ({
   user,
 }: exchangePublicTokenProps) => {
   try {
-    const userData = await getUserInfo({ userId: user.$id });
+    const userData = await getUserInfo({ userId: user.userId });
     
     if (!userData || !userData.dwollaCustomerId) {
       throw new Error('User data or Dwolla customer ID not found');
@@ -259,7 +259,7 @@ export const exchangePublicToken = async ({
     if (!fundingSourceUrl) throw new Error('Failed to create funding source');
 
     await createBankAccount({
-      userId: user.$id,
+      userId: user.userId,
       bankId: itemId,
       accountId: accountData.account_id,
       accessToken,
@@ -275,5 +275,37 @@ export const exchangePublicToken = async ({
   } catch (error) {
     console.error("An error occurred while exchanging token:", error);
     throw error;
+  }
+}
+
+export const getBanks = async ({ userId }: getBanksProps) => {
+  try {
+    const { database } = await createAdminClient();
+
+    const banks = await database.listDocuments(
+      DATABASE_ID!,
+      BANK_COLLECTION_ID!,
+      [Query.equal('userId', [userId])]
+    )
+
+    return parseStringify(banks.documents);
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+export const getBank = async ({ documentId }: getBankProps) => {
+  try {
+    const { database } = await createAdminClient();
+
+    const bank = await database.listDocuments(
+      DATABASE_ID!,
+      BANK_COLLECTION_ID!,
+      [Query.equal('$id', [documentId])]
+    )
+
+    return parseStringify(bank.documents[0]);
+  } catch (error) {
+    console.log(error)
   }
 }

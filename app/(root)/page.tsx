@@ -2,6 +2,7 @@ import HeaderBox from '@/components/HeaderBox'
 import RightSidebar from '@/components/RightSidebar'
 import TotalBalanceBox from '@/components/TotalBalanceBox'
 import { getLoggedInUser } from '@/lib/actions/user.actions'
+import { getAccounts } from '@/lib/actions/bank.actions'
 
 const Home = async () => {
   const loggedIn = await getLoggedInUser();
@@ -23,6 +24,9 @@ const Home = async () => {
     )
   }
 
+  const accounts = await getAccounts({ userId: loggedIn.userId });
+  const accountsData = accounts?.data;
+
   return (
     <section className="home">
       <div className="home-content">
@@ -35,9 +39,9 @@ const Home = async () => {
           />
 
           <TotalBalanceBox 
-            accounts={[]}
-            totalBanks={1}
-            totalCurrentBalance={1250.35}
+            accounts={accountsData}
+            totalBanks={accounts?.totalBanks}
+            totalCurrentBalance={accounts?.totalCurrentBalance}
           />
         </header>
 
@@ -45,9 +49,9 @@ const Home = async () => {
       </div>
 
       <RightSidebar 
-        user={loggedIn as User}
+        user={loggedIn}
         transactions={[]}
-        banks={[{ currentBalance: 123.50 }, { currentBalance: 500.50}] as unknown as Bank[] & Account[]}
+        banks={accountsData?.slice(0, 2)}
       />
     </section>
   )
