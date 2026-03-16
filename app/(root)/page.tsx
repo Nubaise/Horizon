@@ -1,10 +1,11 @@
 import HeaderBox from '@/components/HeaderBox'
 import RightSidebar from '@/components/RightSidebar'
 import TotalBalanceBox from '@/components/TotalBalanceBox'
+import RecentTransactions from '@/components/RecentTransactions'
 import { getLoggedInUser } from '@/lib/actions/user.actions'
-import { getAccounts } from '@/lib/actions/bank.actions'
+import { getAccounts, getAccount } from '@/lib/actions/bank.actions'
 
-const Home = async () => {
+const Home = async ({ searchParams: { id, page } }: SearchParamProps) => {
   const loggedIn = await getLoggedInUser();
 
   if (!loggedIn) {
@@ -27,6 +28,11 @@ const Home = async () => {
   const accounts = await getAccounts({ userId: loggedIn.userId });
   const accountsData = accounts?.data;
 
+  const appwriteItemId = (id as string) || accountsData?.[0]?.appwriteItemId;
+  const currentPage = Number(page as string) || 1;
+
+  const accountData = await getAccount({ appwriteItemId });
+
   return (
     <section className="home">
       <div className="home-content">
@@ -45,12 +51,17 @@ const Home = async () => {
           />
         </header>
 
-        RECENT TRANSACTIONS
+        <RecentTransactions 
+          accounts={accountsData}
+          transactions={accountData?.transactions}
+          appwriteItemId={appwriteItemId}
+          page={currentPage}
+        />
       </div>
 
       <RightSidebar 
         user={loggedIn}
-        transactions={[]}
+        transactions={accountData?.transactions}
         banks={accountsData?.slice(0, 2)}
       />
     </section>
